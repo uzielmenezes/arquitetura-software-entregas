@@ -1,0 +1,14 @@
+meta {
+  name: GET /elegibilidades/{protocolo}
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://127.0.0.1:8001/elegibilidades/{{protocolo}}
+  auth: none
+}
+
+vars:pre-request {
+  protocolo: d11770c9-48a1-40f3-9045-e6f205890e40
+}

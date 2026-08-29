@@ -1,0 +1,1 @@
+﻿{"codigo":"dados_invalidos","mensagem":"A requisição não atende ao contrato.","detalhes":[{"campo":"body.cpf","mensagem":"Field required","tipo":"missing"}]}
