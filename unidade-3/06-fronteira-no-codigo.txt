@@ -1,0 +1,19 @@
+﻿=== PROVA DE FRONTEIRA NO CODIGO-FONTE ===
+Comando: busca em src/hospital/servicos/exames.py pelos padroes elegibilidade|db_elegibilidade|beneficiarios
+
+Ocorrencias encontradas em exames.py (todas de contrato HTTP, nenhuma de SQL):
+  linha 32  : def obter_cliente_elegibilidade():  (fabrica o cliente HTTP)
+  linha 74  : response = cliente.get("/elegibilidades/" + beneficiario_id)  (contrato HTTP)
+  linha 92  : elegibilidade = response.json()  (leitura do corpo da resposta)
+  linhas 98-105: validacoes do payload recebido por HTTP
+
+Padroes AUSENTES de exames.py (testados por test_exames_source_cannot_access_eligibility_table_directly):
+  - 'elegibilidade.beneficiarios'            -> ausente (nenhum SQL contra a tabela alheia)
+  - 'from elegibilidade'                    -> ausente
+  - 'join elegibilidade'                    -> ausente
+  - 'db_elegibilidade'                      -> ausente (nenhuma conexao com o banco do vizinho)
+
+A unica rota entre Exames e Elegibilidade e o HTTP (ELIGIBILIDADE_URL=http://elegibilidade:8000 no Compose).
+No Compose, exames nao participa da rede elegibilidade-db-net (internal=true), entao mesmo um SQL
+acidental nao encontraria caminho de rede ate db_elegibilidade. Fronteira garantida em dois niveis:
+topologia (infra) + disciplina de codigo (teste).

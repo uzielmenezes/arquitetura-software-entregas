@@ -1,0 +1,25 @@
+﻿
+=== DEMONSTRACAO DA TABELA DE TRADUCAO DE FALHAS (exames.py) ===
+Aplicacao real via TestClient; chamada HTTP ao vizinho simulada com
+MockTransport do httpx (mesmo codigo /exames da imagem).
+
+[201 - elegivel] HTTP 201 (esperado 201) body={'beneficiario_id': 'paciente-001', 'codigo_exame': 'HEM-001', 
+'solicitacao_id': 41, 'situacao': 'solicitado'}
+[503 - dependencia_indisponivel (rede falhou)] HTTP 503 (esperado 503) body={'detail': {'codigo': 
+'dependencia_indisponivel'}}
+[503 - dependencia_indisponivel (timeout 2.0s)] HTTP 503 (esperado 503) body={'detail': {'codigo': 
+'dependencia_indisponivel'}}
+[503 - dependencia_indisponivel (vizinho 500)] HTTP 503 (esperado 503) body={'detail': {'codigo': 
+'dependencia_indisponivel'}}
+[422 - beneficiario_desconhecido (vizinho 404)] HTTP 422 (esperado 422) body={'detail': {'codigo': 
+'beneficiario_desconhecido'}}
+[502 - contrato_invalido (resposta nao-JSON)] HTTP 502 (esperado 502) body={'detail': {'codigo': 'contrato_invalido'}}
+[502 - contrato_invalido (contrato fora do esperado)] HTTP 502 (esperado 502) body={'detail': {'codigo': 
+'contrato_invalido'}}
+[422 - beneficiario_inelegivel (decisao de negocio)] HTTP 422 (esperado 422) body={'detail': {'codigo': 
+'beneficiario_inelegivel'}}
+
+TODOS OS CENARIOS CONFEREM: 8 casos, status conforme a tabela do modulo.
+Salvo em saida_tabela_falhas.json
+
+

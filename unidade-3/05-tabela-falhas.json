@@ -1,0 +1,83 @@
+[
+  {
+    "cenario": "201 - elegivel",
+    "status_esperado": 201,
+    "status_observado": 201,
+    "corpo": {
+      "beneficiario_id": "paciente-001",
+      "codigo_exame": "HEM-001",
+      "solicitacao_id": 41,
+      "situacao": "solicitado"
+    }
+  },
+  {
+    "cenario": "503 - dependencia_indisponivel (rede falhou)",
+    "status_esperado": 503,
+    "status_observado": 503,
+    "corpo": {
+      "detail": {
+        "codigo": "dependencia_indisponivel"
+      }
+    }
+  },
+  {
+    "cenario": "503 - dependencia_indisponivel (timeout 2.0s)",
+    "status_esperado": 503,
+    "status_observado": 503,
+    "corpo": {
+      "detail": {
+        "codigo": "dependencia_indisponivel"
+      }
+    }
+  },
+  {
+    "cenario": "503 - dependencia_indisponivel (vizinho 500)",
+    "status_esperado": 503,
+    "status_observado": 503,
+    "corpo": {
+      "detail": {
+        "codigo": "dependencia_indisponivel"
+      }
+    }
+  },
+  {
+    "cenario": "422 - beneficiario_desconhecido (vizinho 404)",
+    "status_esperado": 422,
+    "status_observado": 422,
+    "corpo": {
+      "detail": {
+        "codigo": "beneficiario_desconhecido"
+      }
+    }
+  },
+  {
+    "cenario": "502 - contrato_invalido (resposta nao-JSON)",
+    "status_esperado": 502,
+    "status_observado": 502,
+    "corpo": {
+      "detail": {
+        "codigo": "contrato_invalido"
+      }
+    }
+  },
+  {
+    "cenario": "502 - contrato_invalido (contrato fora do esperado)",
+    "status_esperado": 502,
+    "status_observado": 502,
+    "corpo": {
+      "detail": {
+        "codigo": "contrato_invalido"
+      }
+    }
+  },
+  {
+    "cenario": "422 - beneficiario_inelegivel (decisao de negocio)",
+    "status_esperado": 422,
+    "status_observado": 422,
+    "corpo": {
+      "detail": {
+        "codigo": "beneficiario_inelegivel"
+      }
+    }
+  }
+]

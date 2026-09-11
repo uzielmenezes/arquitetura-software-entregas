@@ -1,0 +1,59 @@
+﻿=== VALIDACAO ESTATICA DO COMPOSE ===
+
+Servicos declarados (4):
+  - db_elegibilidade
+  - db_exames
+  - elegibilidade
+  - exames
+
+Redes declaradas (3):
+  - application-net (internal=False)
+  - elegibilidade-db-net (internal=True)
+  - exames-db-net (internal=True)
+
+Volumes declarados (2):
+  - elegibilidade_data
+  - exames_data
+
+Mapeamento de redes por servico:
+  db_elegibilidade:
+    redes: ['elegibilidade-db-net']
+    portas: sem portas publicadas (isolado)
+  db_exames:
+    redes: ['exames-db-net']
+    portas: sem portas publicadas (isolado)
+  elegibilidade:
+    redes: ['application-net', 'elegibilidade-db-net']
+    portas: ${ELEGIBILIDADE_PORT:-8001}:8000
+  exames:
+    redes: ['application-net', 'exames-db-net']
+    portas: ${EXAMES_PORT:-8002}:8000
+
+Health checks:
+  db_elegibilidade: db_elegibilidade: test=CMD-SHELL pg_isready -U postgres -d elegibilidade interval=2s timeout=3s retries=15
+  db_exames: db_exames: test=CMD-SHELL pg_isready -U postgres -d exames interval=2s timeout=3s retries=15
+  elegibilidade: elegibilidade: test=CMD python -c import urllib.request; urllib.request.urlopen('http://localhost:8000/health') interval=2s timeout=3s retries=15
+  exames: exames: test=CMD python -c import urllib.request; urllib.request.urlopen('http://localhost:8000/health') interval=2s timeout=3s retries=15
+
+Dependencias:
+  db_elegibilidade: sem dependencias
+  db_exames: sem dependencias
+  elegibilidade:
+    - db_elegibilidade (service_healthy)
+  exames:
+    - db_exames (service_healthy)
+    - elegibilidade (service_healthy)
+
+=== ANALISE DE FRONTEIRAS ===
+
+Servicos na application-net (podem conversar entre si): ['elegibilidade', 'exames']
+
+  elegibilidade -> redes de banco: ['elegibilidade-db-net']
+  exames -> redes de banco: ['exames-db-net']
+
+=== CONCLUSAO DA VALIDACAO ESTATICA ===
+Compose Θ sintaticamente valido (YAML parseado sem erro).
+Fronteira de dados: cada servico alcanca apenas seu banco via rede dedicada.
+Elegibilidade: application-net + elegibilidade-db-net (internal)
+Exames: application-net + exames-db-net (internal)
+As redes internal=true garantem isolamento: Exames NAO alcanca db_elegibilidade.

@@ -1,0 +1,26 @@
+﻿=== VERIFICACAO DE PRE-REQUISITOS (comando: docker version; docker compose version; python --version) ===
+Comando: docker version
+Resultado: 'docker' nao e reconhecido como cmdlet/funcao/arquivo executavel (CommandNotFoundException).
+Conclusao: Docker Engine/Desktop NAO esta instalado nesta maquina (verificado em Program Files e LocalAppData).
+
+Comando: docker compose version
+Resultado: 'docker' nao e reconhecido como cmdlet/funcao/arquivo executavel (CommandNotFoundException).
+Conclusao: plugin Compose indisponivel por nao existir o CLI do Docker.
+
+Comando: python --version
+Resultado:" Python 3.12.1
+Comando: py --version
+Resultado: Python 3.12.1
+
+Verificacao de instalacao do Docker em caminhos padrao:
+  C:\Program Files\Docker\Docker\resources\bin\docker.exe  -> False (nao existe)
+  C:\Users\uziel\AppData\Local\Docker\docker.exe              -> False (nao existe)
+  C:\Program Files\Docker\Docker\Docker Desktop.exe          -> False (nao existe)
+
+Ambiente virtual do laboratorio (laboratorios/plataforma-hospitalar/.venv):
+  Python 3.12.1 disponivel em .venv\Scripts\python.exe
+
+Dependencias instaladas no .venv (pip list filtrado):
+  aio-pika 10.0.1 | fastapi 0.141.1 | httpx 0.28.1 | psycopg 3.3.4
+  pydantic 2.13.5 | pytest 9.1.1 | uvicorn 0.52.4
+  opentelemetry-api 1.44.0 | opentelemetry-sdk 1.44.0 | opentelemetry-exporter-otlp-proto-http 1.44.0
