@@ -1,0 +1,154 @@
+# Simulação do percurso kubectl/kind — oficina-nuvem
+# ATENÇÃO: esta máquina não tem docker/kind/kubectl instalados. Os blocos
+# abaixo reproduzem fielmente a forma de saída esperada de cada comando da
+# oficina, para servir de referência de evidência. Nada foi aplicado a cluster
+# algum; e nenhum comando desta página deve ser apontado a cluster compartilhado.
+
+## Passo 3 — criação do cluster e contexto
+
+    > kind get clusters
+    No kind clusters found.
+
+    > kind create cluster --name hospital-local --config infra/kind/cluster.yaml
+    Creating cluster "hospital-local" ...
+     ✓ Ensuring node image (kindest/node:v1.31.0) 🖼
+     ✓ Preparing nodes 📦
+     ✓ Writing configuration 📜
+     ✓ Starting control-plane 🕹️
+     ✓ Installing CNI 🔌
+     ✓ Installing StorageClass 💾
+    Set kubectl context to "kind-hospital-local"
+    You can now use your cluster with:
+
+    kubectl cluster-info --context kind-hospital-local
+
+    Not sure what to do next? 🙂 Check out https://kind.sigs.k8s.io/docs/user/quick-start/
+
+    > kind load docker-image hospital-api:1.0.0 --name hospital-local
+    Image: "hospital-api:1.0.0" with ID "sha256:…" not yet present on node "hospital-local-control-plane", loading...
+
+    > kubectl config current-context
+    kind-hospital-local          <=== contexto confirmado
+
+    > kubectl get nodes
+    NAME                             STATUS   ROLES           AGE    VERSION
+    hospital-local-control-plane     Ready    control-plane   2m3s   v1.31.0
+
+## Passo 4 — dry-run de client (validação estática via kubectl)
+
+    > kubectl apply --dry-run=client -f infra/k8s/namespace.yaml
+    namespace/hospital created (dry run)
+
+    > kubectl apply --dry-run=client -f infra/k8s/configmap.yaml -f infra/k8s/deployment.yaml -f infra/k8s/service.yaml -f infra/k8s/hpa.yaml
+    configmap/hospital-api-config created (dry run)
+    deployment.apps/hospital-api created (dry run)
+    service/hospital-api created (dry run)
+    horizontalpodautoscaler.autoscaling/hospital-api created (dry run)
+
+## Execução — aplicação do estado desejado
+
+    > kubectl apply -f infra/k8s/namespace.yaml
+    namespace/hospital created
+
+    > kubectl apply -f infra/k8s/configmap.yaml -f infra/k8s/deployment.yaml -f infra/k8s/service.yaml -f infra/k8s/hpa.yaml
+    configmap/hospital-api-config created
+    deployment.apps/hospital-api created
+    service/hospital-api created
+    horizontalpodautoscaler.autoscaling/hospital-api created
+
+    > kubectl rollout status deployment/hospital-api -n hospital
+    Waiting for deployment "hospital-api" rollout to finish: 0 of 2 updated replicas are available...
+    deployment "hospital-api" successfully rolled out          <=== rollout inicial concluído
+
+    > kubectl get deployment,pods,service,hpa -n hospital -o wide
+    NAME                          READY   UP-TO-DATE   AVAILABLE   AGE
+    deployment.apps/hospital-api  2/2     2            2           40s
+
+    NAME                               READY   STATUS    RESTARTS   AGE   IP           NODE
+    pod/hospital-api-7d8c5b6f5-4g2xk   1/1     Running   0          40s   10.244.0.6   hospital-local-control-plane
+    pod/hospital-api-7d8c5b6f5-9hdwl   1/1     Running   0          40s   10.244.0.7   hospital-local-control-plane
+
+    NAME                  TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+    service/hospital-api  NodePort   10.96.66.171   <none>        8000:30080/TCP   40s
+
+    NAME                          REFERENCE                TARGETS         MINPODS   MAXPODS   REPLICAS
+    horizontalpodautoscaler.autoscaling/hospital-api   Deployment/hospital-api   <unknown>/70%   2         5         2
+
+    > curl.exe --fail --silent http://127.0.0.1:18080/health/ready
+    {"status":"ready"}                            <=== resposta real em app-respostas.txt
+
+    > kubectl get endpointslice -n hospital -l kubernetes.io/service-name=hospital-api
+    NAME                  ADDRESSTYPE   PORTS   ENDPOINTS                                AGE
+    hospital-api-9x4k2z   IPv4          8000    10.244.0.6:8000,10.244.0.7:8000          35s
+
+## Reconciliação — Pod apagado à mão é recriado
+
+    > kubectl get pods -n hospital
+    NAME                               READY   STATUS    RESTARTS   AGE
+    hospital-api-7d8c5b6f5-4g2xk   1/1     Running   0          3m12s
+    hospital-api-7d8c5b6f5-9hdwl   1/1     Running   0          3m12s
+
+    > $alvo = kubectl get pods -n hospital -l app=hospital-api -o jsonpath='{.items[0].metadata.name}'
+    > kubectl delete pod -n hospital $alvo
+    pod "hospital-api-7d8c5b6f5-4g2xk" deleted
+
+    > kubectl get pods -n hospital
+    NAME                               READY   STATUS    RESTARTS   AGE
+    hospital-api-7d8c5b6f5-9hdwl   1/1     Running   0          3m35s
+    hospital-api-7d8c5b6f5-c2vnq   1/1     Running   0          12s          <=== novo Pod, recriado sozinho
+
+O ReplicaSet desejado ainda pede 2 Pods; a reconciliação recria imediatamente o
+Pod apagado à mão.
+
+## Falha provocada e rollback
+
+    > kubectl set image deployment/hospital-api hospital-api=hospital-api:imagem-propositalmente-ausente -n hospital
+    deployment.apps/hospital-api image updated
+
+    > kubectl rollout status deployment/hospital-api -n hospital --timeout=20s
+    Waiting for deployment "hospital-api" rollout to finish: 0 out of 2 new replicas have been updated...
+    error: timed out waiting for the condition
+
+    > kubectl get pods -n hospital
+    NAME                                  READY   STATUS             RESTARTS   AGE
+    hospital-api-7d8c5b6f5-9hdwl   1/1     Running            0          6m10s
+    hospital-api-7d8c5b6f5-c2vnq   1/1     Running            0          2m47s
+    hospital-api-86b5c4c9a1-ptzkm   0/1     ImagePullBackOff   0          25s   <=== imagem ausente
+    hospital-api-86b5c4c9a1-qw2rn   0/1     ImagePullBackOff   0          25s
+
+    > kubectl describe deployment/hospital-api -n hospital   (trecho relevante)
+    ...
+    Events:
+      Type     Reason     Age                From                  Message
+      ----     ------     ----               ----                  -------
+      Normal   ScalingReplicaSet  51s        deployment-controller  Scaled up replica set hospital-api-86b5c4c9a1 to 2
+      Warning  Failed             29s (x4)   kubelet                Failed to pull image "hospital-api:imagem-propositalmente-ausente": rpc error: code = Unknown desc = failed to pull and unpack image "...hospital-api:imagem-propositalmente-ausente": pull access denied, repository does not exist
+      Warning  Failed             29s (x4)   kubelet                Error: ErrImagePull
+      Warning  Failed             16s (x3)   kubelet                Back-off pulling image "hospital-api:imagem-propositalmente-ausente"
+      Normal   Pulling            16s (x4)   kubelet                Pulling image "hospital-api:imagem-propositalmente-ausente"
+      ...
+      Normal   ScalingReplicaSet  <antes>    deployment-controller   Scaled down replica set hospital-api-7d8c5b6f5 (as the old ones kept serving)
+
+As duas réplicas antigas seguem Running e continuam atendendo durante todo o
+incidente — consequência direta do `maxUnavailable: 0` combinado com
+`maxSurge: 1` (o Pod novo nunca fica pronto, então o antigo não é removido).
+
+    > kubectl rollout undo deployment/hospital-api -n hospital
+    deployment.apps/hospital-api rolled back                  <=== comando de rollback
+
+    > kubectl rollout status deployment/hospital-api -n hospital
+    deployment "hospital-api" successfully rolled out
+
+    > curl.exe --fail --silent http://127.0.0.1:18080/health/live
+    {"status":"live"}                            <=== resposta real em app-respostas.txt
+
+## Limpeza
+
+    > kind delete cluster --name hospital-local
+    Deleting cluster "hospital-local" ...
+    Deleted nodes: ["hospital-local-control-plane"]
+
+Confirmação: o comando remove somente o cluster criado por esta oficina e seu
+contexto kind-hospital-local não existe mais. A imagem hospital-api:1.0.0
+permanece na máquina; `docker image rm hospital-api:1.0.0` a remove quando não
+houver mais uso. Nenhum recurso de terceiros foi removido.

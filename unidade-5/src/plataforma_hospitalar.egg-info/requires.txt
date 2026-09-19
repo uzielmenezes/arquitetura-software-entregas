@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pydantic
+httpx
+psycopg[binary]
+aio-pika
+opentelemetry-sdk
+opentelemetry-exporter-otlp-proto-http
+
+[dev]
+pytest
+pytest-asyncio

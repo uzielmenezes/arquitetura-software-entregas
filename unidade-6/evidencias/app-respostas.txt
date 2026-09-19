@@ -1,0 +1,9 @@
+﻿Resposta real do app.py rodando como imagem equivalente local
+(APP_ENV=local-kind via uvicorn direto em 127.0.0.1:18080; no kind o caminho seria 18080 -> NodePort 30080 -> Pod)
+-- GET /health/ready
+{"status":"ready"}
+-- GET /health/live
+{"status":"live"}
+-- GET /elegibilidades/12345-sintetico
+{"numero":"12345-sintetico","elegivel":true,"ambiente":"local-kind"}
+

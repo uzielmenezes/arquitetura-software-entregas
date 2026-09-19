@@ -1,0 +1,16 @@
+OK  - namespace.yaml: Namespace hospital
+OK  - configmap.yaml: ConfigMap hospital-api-config com APP_ENV=local-kind
+OK  - deployment.yaml: Deployment hospital-api, replicas=2, namespace=hospital
+OK  - deployment.yaml: RollingUpdate maxUnavailable=0 maxSurge=1
+OK  - deployment.yaml: imagem hospital-api:1.0.0, IfNotPresent
+OK  - deployment.yaml: requests 100m/128Mi e limits 250m/256Mi
+OK  - deployment.yaml: readinessProbe -> /health/ready
+OK  - deployment.yaml: livenessProbe -> /health/live
+OK  - deployment.yaml: probes distintas
+OK  - service.yaml: NodePort selector app=hospital-api nodePort=30080
+OK  - hpa.yaml: autoscaling/v2, min=2, max=5
+OK  - cluster.yaml: kind Cluster, nó único, 127.0.0.1:18080->30080
+OK  - app.py: compila sem erros de sintaxe
+OK  - requirements.txt: versões fixadas (fastapi==0.141.1; uvicorn==0.52.4)
+
+RESULTADO GERAL: TODOS OS CHECKS PASSARAM

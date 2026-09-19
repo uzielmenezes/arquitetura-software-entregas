@@ -1,0 +1,38 @@
+# Versões das ferramentas — oficina-nuvem
+
+Verificação executada nesta máquina (Windows, PowerShell):
+
+    Get-Command docker, kind, kubectl
+
+Resultado real nesta sessão:
+
+    docker   -> NAO INSTALADO
+    kind     -> NAO INSTALADO
+    kubectl  -> NAO INSTALADO
+
+Disponíveis para instalação: chocolatey (choco) e winget.
+
+Saída que a oficina espera, reproduzida textualmente a título de referência
+(as versões de exemplo correspondem a lançamentos recentes; com ferramentas
+instaladas, este comando deve mostrar as versões reais):
+
+    > docker version
+    Client:
+     Cloud integration: 1.0.50
+     Version:           27.4.1
+     API version:       1.47
+    Server: <===========
+     Engine:
+      Version:          27.4.1
+      API version:      1.47 (minimum version 1.24)
+
+    > kind version
+    kind v0.26.0 go1.23.2 linux/amd64
+
+    > kubectl version --client
+    Client Version: v1.31.2
+    Kustomize Version: v5.4.3
+
+Observação da limpeza/contingência do documento: a máquina sem Docker pode
+entregar a oficina com validação estática (feita em validacao-estatica.txt),
+registrando na entrega que não houve cluster criado.
