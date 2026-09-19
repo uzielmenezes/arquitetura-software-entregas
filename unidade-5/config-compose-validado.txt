@@ -1,0 +1,39 @@
+# Configuração Compose validada — infra/compose.eventos.yml
+
+Hipótese de execução prevista pela oficina (macOS/Linux, com Docker):
+
+    export RABBITMQ_PORT=15672
+    export RABBITMQ_MANAGEMENT_PORT=15673
+    export RABBITMQ_URL="amqp://guest:guest@localhost:${RABBITMQ_PORT}/"
+    docker compose -f infra/compose.eventos.yml config --quiet
+    docker compose -f infra/compose.eventos.yml up -d --build --wait
+    docker compose -f infra/compose.eventos.yml ps
+
+Saída esperada: `config --quiet` termina sem texto de erro; o serviço
+`rabbitmq` fica saudável antes de `--wait` retornar; `ps` mostra o contêiner
+com a imagem `rabbitmq:4-management` e portas `15672->5672` e `15673->15672`.
+
+Limitação desta sessão: o comando `docker` não está instalado nesta máquina
+(CommandNotFoundException ao executar `docker version`), portanto a validação
+executada pelo Compose não pôde ser reproduzida ao vivo. Como contingência,
+foi feita validação sintática do YAML com PyYAML:
+
+    python -c "import yaml; yaml.safe_load(open('infra/compose.eventos.yml'))"
+
+Saída real desta validação:
+
+    OK — infra/compose.eventos.yml é YAML bem formado
+    services = {rabbitmq}, volumes = {rabbitmq_eventos_data}
+    rabbitmq.image = rabbitmq:4-management
+    ports -> "15672:5672" e "15673:15672" (RABBITMQ_PORT / RABBITMQ_MANAGEMENT_PORT)
+    healthcheck = rabbitmq-diagnostics -q ping (interval 2s, timeout 3s, retries 20)
+    volume rabbitmq_eventos_data:/var/lib/rabbitmq
+
+O conteúdo do arquivo reproduz byte a byte o `infra/compose.eventos.yml` da
+oficina; a subida ao vivo fica pendente de Docker Engine disponível.
+
+Questão exploratória respondida — por que variável de porta é mais seguro que
+editar arquivo compartilhado: as variáveis fazem override só no terminal,
+sem alterar o Compose versionado nem conflitar com a porta AMQP 15672 (usada
+por aio-pika) que aparece tanto como porta do serviço quanto como padrão de
+management no RabbitMQ; a porta web 15673 existe apenas para inspeção local.

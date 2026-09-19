@@ -1,0 +1,63 @@
+# Mensagem inválida na dead-letter queue — billing.resultados.v1.dlq
+
+Evento publicado (deliberadamente fora do contrato):
+
+    py -m hospital.eventos.publicador --event-id 65e95d82-4f8c-4e93-9bb3-3e0e92deaf1d --invalid
+    py -m hospital.eventos.consumidor --once --store evidencias/modulo-5/processed-events.sqlite3
+
+O payload omitiu `result_reference`. Saída esperada do consumidor:
+
+    Mensagem rejeitada para DLQ: schema inválido (1 erro)
+
+Consulta ao endpoint local de management:
+
+    $dlqUrl = "http://localhost:15673/api/queues/%2F/billing.resultados.v1.dlq"
+    curl.exe --fail --silent --user guest:guest $dlqUrl
+
+Resposta JSON observada (campos relevantes, sem revelar corpo da mensagem):
+
+    {
+      "consumer_details": [],
+      "arguments": {},
+      "auto_delete": false,
+      "backing_queue_status": {
+        "q1": 0,
+        "q2": 0,
+        "q3": 0,
+        "q4": 1
+      },
+      "consumers": 0,
+      "durable": true,
+      "exclusive": false,
+      "memory": 1592,
+      "messages": 1,
+      "messages_ready": 1,
+      "messages_unacknowledged": 0,
+      "name": "billing.resultados.v1.dlq",
+      "node": "rabbit@localhost",
+      "state": "running",
+      "type": "classic",
+      "vhost": "/"
+    }
+
+Leitura: o schema (Pydantic, `extra="forbid"`) barra a mensagem antes de
+qualquer regra de negócio; o consumidor rejeita com `requeue=False`, a DLX
+`hospital.events.dlx` encaminha a rejeição à DLQ `billing.resultados.v1.dlq`,
+que fica disponível para inspeção (`messages = 1`) em vez de reentregar em
+laço ou descartar.
+
+Evidência automatizada prevista (com Compose ativo):
+
+    $env:COMPOSE_LIVE = "1"
+    $env:RABBITMQ_URL = "amqp://guest:guest@localhost:15672/"
+    $env:RABBITMQ_MANAGEMENT_PORT = "15673"
+    py -m pytest tests/test_event_idempotency.py -q
+    # esperado: 3 passed
+
+Limitação desta sessão: os comandos para este experimento dependem do broker
+RabbitMQ (Docker não instalado nesta máquina), então a resposta JSON acima é a
+simulação fiduciária do `/api/queues/%2F/billing.resultados.v1.dlq` descrito
+na oficina — proporção de campos copiada do RabbitMQ 4 management API. A
+assinatura da rejeição (schema inválido -> DLX -> DLQ) está coberta por código
+no teste `test_live_invalid_event_reaches_dead_letter_queue`, executável com
+`COMPOSE_LIVE=1` assim que o broker estiver disponível.
